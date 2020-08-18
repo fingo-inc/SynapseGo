@@ -123,6 +123,22 @@ type (
 		HTTPCode  string `json:"httpCode"`
 		Message   string `json:"message"`
 	}
+
+	// ServerTimeout represents ERROR_CODE 504
+	// Server Timeout
+	ServerTimeout struct {
+		ErrorCode string `json:"errorCode"`
+		HTTPCode  string `json:"httpCode"`
+		Message   string `json:"message"`
+	}
+
+	// DefaultError represents an unhandled HTTP error
+	// Pass this instead of nil
+	DefaultError struct {
+		ErrorCode string `json:"errorCode"`
+		HTTPCode  string `json:"httpCode"`
+		Message   string `json:"message"`
+	}
 )
 
 /********** METHODS **********/
@@ -183,9 +199,16 @@ func (e *ServiceUnavailable) Error() string {
 	return formatErrorMessage(e.HTTPCode, e.ErrorCode, e.Message)
 }
 
+func (e *ServerTimeout) Error() string {
+	return formatErrorMessage(e.HTTPCode, e.ErrorCode, e.Message)
+}
+
+func (e *DefaultError) Error() string {
+	return formatErrorMessage(e.HTTPCode, e.ErrorCode, e.Message)
+}
+
 func handleAPIError(errorCode, httpCode, message string) error {
 	apiErrors := map[string]error{
-		"":    nil,
 		"10":  &ActionPending{errorCode, httpCode, message},
 		"100": &IncorrectClientCredentials{errorCode, httpCode, message},
 		"110": &IncorrectUserCredentials{errorCode, httpCode, message},
@@ -200,9 +223,13 @@ func handleAPIError(errorCode, httpCode, message string) error {
 		"460": &RequestFailed{errorCode, httpCode, message},
 		"500": &ServerError{errorCode, httpCode, message},
 		"503": &ServiceUnavailable{errorCode, httpCode, message},
+		"504": &ServerTimeout{errorCode, httpCode, message},
 	}
 
-	return apiErrors[errorCode]
+	if code, ok := apiErrors[errorCode]; ok {
+		return code
+	}
+	return &DefaultError{HTTPCode: httpCode, ErrorCode: errorCode, Message: message}
 }
 
 func handleHTTPError(d []byte) error {
@@ -218,7 +245,7 @@ func handleHTTPError(d []byte) error {
 // HELPER METHODS
 
 func formatErrorMessage(httpCode, errorCode, msg string) string {
-	return "HTTP_CODE " + httpCode + " ERROR_CODE " + errorCode + "\n" + msg
+	return "http_code " + httpCode + " error_code " + errorCode + " " + msg
 }
 
 func formatErrorObject(httpCode, errorCode, msg string) map[string]interface{} {
