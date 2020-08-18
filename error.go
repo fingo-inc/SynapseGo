@@ -135,9 +135,9 @@ type (
 	// DefaultError represents an unhandled HTTP error
 	// Pass this instead of nil
 	DefaultError struct {
-		ErrorCode string "000"
-		HTTPCode  string "000"
-		Message   string "Error code not found"
+		ErrorCode string `json:"errorCode"`
+		HTTPCode  string `json:"httpCode"`
+		Message   string `json:"message"`
 	}
 )
 
@@ -229,7 +229,7 @@ func handleAPIError(errorCode, httpCode, message string) error {
 	if code, ok := apiErrors[errorCode]; ok {
 		return code
 	}
-	return &DefaultError{ErrorCode: errorCode}
+	return &DefaultError{HTTPCode: httpCode, ErrorCode: errorCode, Message: message}
 }
 
 func handleHTTPError(d []byte) error {
