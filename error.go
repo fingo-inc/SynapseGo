@@ -229,7 +229,7 @@ func handleAPIError(errorCode, httpCode, message string) error {
 	if code, ok := apiErrors[errorCode]; ok {
 		return code
 	}
-	return &DefaultError{}
+	return &DefaultError{ErrorCode: errorCode}
 }
 
 func handleHTTPError(d []byte) error {
