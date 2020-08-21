@@ -2,6 +2,12 @@ package synapse
 
 /********** GLOBAL VARIABLES **********/
 
+const (
+	UnknownErrorCode    = "999"
+	UnknownHTTPCode     = "999"
+	UnknownErrorMessage = "unknown error"
+)
+
 /********** TYPES **********/
 
 type (
@@ -235,9 +241,9 @@ func handleAPIError(errorCode, httpCode, message string) error {
 func handleHTTPError(d []byte) error {
 	data := readStream(d)
 
-	errCode := data["error_code"].(string)
-	httpCode := data["http_code"].(string)
-	msg := data["error"].(map[string]interface{})["en"].(string)
+	errCode := getStringOrDefault(data, "error_code", UnknownErrorCode)
+	httpCode := getStringOrDefault(data, "http_code", UnknownHTTPCode)
+	msg := getStringOrDefault(getMapOrEmpty(data, "error"), "en", UnknownErrorMessage)
 
 	return handleAPIError(errCode, httpCode, msg)
 }
@@ -254,4 +260,26 @@ func formatErrorObject(httpCode, errorCode, msg string) map[string]interface{} {
 		"error_code": errorCode,
 		"error":      msg,
 	}
+}
+
+func getStringOrDefault(data map[string]interface{}, key, def string) string {
+	if data != nil {
+		if val, ok := data[key]; ok {
+			if res, ok := val.(string); ok {
+				return res
+			}
+		}
+	}
+	return def
+}
+
+func getMapOrEmpty(data map[string]interface{}, key string) map[string]interface{} {
+	if data != nil {
+		if val, ok := data[key]; ok {
+			if res, ok := val.(map[string]interface{}); ok {
+				return res
+			}
+		}
+	}
+	return map[string]interface{}{}
 }
